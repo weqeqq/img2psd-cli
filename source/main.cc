@@ -2,6 +2,7 @@
 #include <psd/document.h>
 #include <CLI/CLI.hpp>
 #include <indicators/progress_bar.hpp>
+#include <image/processing/resize.h>
 #include <indicators/cursor_control.hpp>
 #include <condition_variable>
 #include <mutex>
@@ -82,16 +83,27 @@ public:
     for (auto index = 0u;
               index < GetImageCount();
               index++) {
-      auto image_1 = GetImage1(index);
-      auto image_2 = GetImage2(index);
+      auto image_1 = GetImage  (index);
+      auto image_2 = FindImage (image_1);
 
       thread_pool.Enqueue([=, &bar] {
         PSD::Document<> document;
 
-        document.Push(PSD::Layer<>("Background") .SetImage(Image::Decode(image_1)));
-        document.Push(PSD::Layer<>("Layer 1")    .SetImage(Image::Decode(image_2)));
+        auto buffer_1 = Image::Decode(image_1);
+        auto buffer_2 = Image::Decode(image_2);
 
-        document.Save(GetOutputPath(image_1, index));
+        if (buffer_1.GetLength() != buffer_2.GetLength()) {
+          buffer_1 = Image::Resize(
+            buffer_1, 
+            buffer_2.GetRowCount(), 
+            buffer_2.GetColumnCount(), 
+            Image::Interpolation::NearestNeighbor
+          );
+        }
+        document.Push(PSD::Layer<>("Background") .SetImage(buffer_1));
+        document.Push(PSD::Layer<>("Layer 1")    .SetImage(buffer_2));
+
+        document.Save(GetOutputPath(image_1, index).string());
 
         bar.tick();
       });
@@ -106,21 +118,24 @@ private:
     using namespace indicators;
     return ProgressBar(
       option::BarWidth(50),
-      option::Start("("),
-      option::Fill("•"),
-      option::Lead("·"),
+      option::Start("["),
+      option::Fill("#"),
+      option::Lead(" "),
       option::Remainder(" "),
-      option::End(")"),
-      option::PrefixText("Creating documents... "),
+      option::End("]"),
+      option::PrefixText(" Creating documents... "),
       option::ShowElapsedTime(true),
       option::ShowRemainingTime(true),
       option::MaxProgress(GetImageCount())
     );
   }
-  static auto GetImage(const std::string &dir, std::uint64_t index) {
+  static std::filesystem::path GetImage(std::uint64_t index) {
     auto current = 0u;
-    for (decltype(auto) entry : std::filesystem::directory_iterator(dir)) {
-      if (entry.is_regular_file() && entry.path().extension() == ".png") {
+    for (decltype(auto) entry : std::filesystem::directory_iterator(dir_1_)) {
+      if (entry.is_regular_file() && 
+         (entry.path().extension() == ".png" || 
+          entry.path().extension() == ".jpg" || 
+          entry.path().extension() == ".jpeg")) {
 
         if (current++ == index) {
           return entry.path();
@@ -129,15 +144,19 @@ private:
     }
     throw std::runtime_error("no image found");
   }
-  static std::filesystem::path GetImage1(std::uint64_t index) {
-    return GetImage(dir_1_, index);
-  }
-  static std::filesystem::path GetImage2(std::uint64_t index) {
-    return GetImage(dir_2_, index);
+  static std::filesystem::path FindImage(const std::filesystem::path &other) {
+    for (decltype(auto) entry : std::filesystem::directory_iterator(dir_2_)) {
+      auto path = entry.path();
+
+      if (path.filename() == other.filename()) {
+        return path;
+      }
+    }
+    throw std::runtime_error("image not found");
   }
 
-  static std::filesystem::path GetOutputPath(std::string base_path, std::uint64_t index) {
-    auto file_name = std::filesystem::path(base_path).filename();
+  static std::filesystem::path GetOutputPath(const std::filesystem::path &base_path, std::uint64_t index) {
+    auto file_name = base_path.filename();
     file_name.replace_extension(".psd");
 
     return output_ / file_name;
@@ -146,7 +165,10 @@ private:
     auto count = 0u;
 
     for (decltype(auto) entry : std::filesystem::directory_iterator(dir)) {
-      if (entry.is_regular_file() && entry.path().extension() == ".png") {
+      if (entry.is_regular_file() && 
+         (entry.path().extension() == ".png" || 
+          entry.path().extension() == ".jpg" || 
+          entry.path().extension() == ".jpeg")) {
         count++;
       }
     }

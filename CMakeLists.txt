@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.23)
 
-project(img2psd-cli VERSION 0.1.0 LANGUAGES CXX)
+project(img2psd-cli VERSION 0.2.0 LANGUAGES CXX)
 
 include(FetchContent)
 
@@ -12,7 +12,7 @@ FetchContent_Declare(
 FetchContent_Declare(
   psd-proj
   GIT_REPOSITORY https://github.com/weqeqq/psd.git
-  GIT_TAG        c15230e8067a6990047540ebed579b69d439ce7c
+  GIT_TAG        main
 )
 FetchContent_Declare(
   indicators-proj
@@ -45,3 +45,4 @@ target_compile_options(img2psd-cli PRIVATE
   -Wall
   -Wpedantic
 )
+set(CMAKE_EXE_LINKER_FLAGS "-static -static-libgcc -static-libstdc++")
