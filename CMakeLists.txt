@@ -12,7 +12,7 @@ FetchContent_Declare(
 FetchContent_Declare(
   psd-proj
   GIT_REPOSITORY https://github.com/weqeqq/psd.git
-  GIT_TAG        main
+  GIT_TAG        9d6e44f1dafa40d48deec316407891323d7ae793
 )
 FetchContent_Declare(
   indicators-proj
