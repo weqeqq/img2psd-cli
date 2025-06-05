@@ -148,7 +148,7 @@ private:
     for (decltype(auto) entry : std::filesystem::directory_iterator(dir_2_)) {
       auto path = entry.path();
 
-      if (path.filename() == other.filename()) {
+      if (path.stem() == other.stem()) {
         return path;
       }
     }
