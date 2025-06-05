@@ -69,6 +69,7 @@ public:
     app.add_option("dir-1", dir_1_)->required();
     app.add_option("dir-2", dir_2_)->required();
     app.add_option("--output", output_)->default_val("output");
+    app.add_flag("--gray", gray_)->default_val(false);
   }
 
   static void Execute(CLI::App &app) {
@@ -87,8 +88,6 @@ public:
       auto image_2 = FindImage (image_1);
 
       thread_pool.Enqueue([=, &bar] {
-        PSD::Document<> document;
-
         auto buffer_1 = Image::Decode(image_1);
         auto buffer_2 = Image::Decode(image_2);
 
@@ -100,11 +99,25 @@ public:
             Image::Interpolation::NearestNeighbor
           );
         }
-        document.Push(PSD::Layer<>("Background") .SetImage(buffer_1));
-        document.Push(PSD::Layer<>("Layer 1")    .SetImage(buffer_2));
+        if (gray_) {
+          PSD::Document<PSD::Depth::Eight, PSD::Color::Grayscale> document;
 
-        document.Save(GetOutputPath(image_1, index).string());
+          auto gray_1 = Image::ColorConvertor(buffer_1).Convert<PSD::Color::Grayscale>();
+          auto gray_2 = Image::ColorConvertor(buffer_2).Convert<PSD::Color::Grayscale>();
 
+          document.Push(PSD::Layer<PSD::Depth::Eight, PSD::Color::Grayscale>("Background") .SetImage(gray_1));
+          document.Push(PSD::Layer<PSD::Depth::Eight, PSD::Color::Grayscale>("Layer 1")    .SetImage(gray_2));
+
+          document.Save(GetOutputPath(image_1, index).string());
+
+        } else {
+          PSD::Document<> document;
+
+          document.Push(PSD::Layer<>("Background") .SetImage(buffer_1));
+          document.Push(PSD::Layer<>("Layer 1")    .SetImage(buffer_2));
+
+          document.Save(GetOutputPath(image_1, index).string());
+        }
         bar.tick();
       });
     }
@@ -113,6 +126,7 @@ private:
   static inline std::string dir_1_;
   static inline std::string dir_2_;
   static inline std::string output_;
+  static inline bool gray_;
 
   static indicators::ProgressBar CreateProgressBar() {
     using namespace indicators;
