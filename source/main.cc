@@ -93,9 +93,9 @@ public:
 
         if (buffer_1.GetLength() != buffer_2.GetLength()) {
           buffer_1 = Image::Resize(
-            buffer_1, 
-            buffer_2.GetRowCount(), 
-            buffer_2.GetColumnCount(), 
+            buffer_1,
+            buffer_2.GetRowCount(),
+            buffer_2.GetColumnCount(),
             Image::Interpolation::NearestNeighbor
           );
         }
@@ -146,9 +146,9 @@ private:
   static std::filesystem::path GetImage(std::uint64_t index) {
     auto current = 0u;
     for (decltype(auto) entry : std::filesystem::directory_iterator(dir_1_)) {
-      if (entry.is_regular_file() && 
-         (entry.path().extension() == ".png" || 
-          entry.path().extension() == ".jpg" || 
+      if (entry.is_regular_file() &&
+         (entry.path().extension() == ".png" ||
+          entry.path().extension() == ".jpg" ||
           entry.path().extension() == ".jpeg")) {
 
         if (current++ == index) {
@@ -166,7 +166,7 @@ private:
         return path;
       }
     }
-    throw std::runtime_error("image not found");
+    throw std::runtime_error("image not found (" + other.string() + ")");
   }
 
   static std::filesystem::path GetOutputPath(const std::filesystem::path &base_path, std::uint64_t index) {
@@ -179,9 +179,9 @@ private:
     auto count = 0u;
 
     for (decltype(auto) entry : std::filesystem::directory_iterator(dir)) {
-      if (entry.is_regular_file() && 
-         (entry.path().extension() == ".png" || 
-          entry.path().extension() == ".jpg" || 
+      if (entry.is_regular_file() &&
+         (entry.path().extension() == ".png" ||
+          entry.path().extension() == ".jpg" ||
           entry.path().extension() == ".jpeg")) {
         count++;
       }
@@ -193,8 +193,8 @@ private:
   }
   static std::uint64_t GetImageCount() {
     auto   count  = GetImageCount(dir_1_);
-    return count == GetImageCount(dir_2_) 
-      ? count 
+    return count == GetImageCount(dir_2_)
+      ? count
       : throw std::runtime_error("directory count mismatch");
   }
 };
@@ -203,7 +203,7 @@ int main(int argc, char **argv) {
   CLI::App app;
 
   Img2PSD::SetupCLI(app);
-  CLI11_PARSE(app, argc, argv); 
+  CLI11_PARSE(app, argc, argv);
 
   Img2PSD::Execute(app);
 
